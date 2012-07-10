@@ -1,12 +1,12 @@
 package ego
 
 import (
-	"ego/http"
-	"ego/ws"
-	"ego/tmpl"
-	"ego/cfg"
-	"ego/db"
-	"ego/actions"
+	"github.com/murz/ego/http"
+	"github.com/murz/ego/ws"
+	"github.com/murz/ego/tmpl"
+	"github.com/murz/ego/cfg"
+	"github.com/murz/ego/db"
+	"github.com/murz/ego/actions"
     "go/build"
     "socketio"
     // "regexp"
