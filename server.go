@@ -25,7 +25,9 @@ type Server struct {
 func NewServer(pkgName string) *Server {
 	pkg, err := build.Default.Import(pkgName, "", build.FindOnly)
     if err != nil {
-        panic(err)
+        pkg = &build.Package{
+        	Dir: "/app",
+        }
     }
 	return &Server {
 		Package: pkg,
