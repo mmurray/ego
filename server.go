@@ -8,7 +8,7 @@ import (
 	"github.com/murz/ego/db"
 	"github.com/murz/ego/actions"
     "go/build"
-    "socketio"
+    "github.com/murz/go-socket.io"
     // "regexp"
     "log"
     "fmt"
