@@ -1,8 +1,8 @@
 package actions
 
 import (
-	"ego/http"
-	"ego/ws"
+	"github.com/murz/ego/http"
+	"github.com/murz/ego/ws"
 	"reflect"
 )
 

@@ -1,7 +1,7 @@
 package db
 
 import (
-	"ego/cfg"
+	"github.com/murz/ego/cfg"
 	"database/sql"
 	"fmt"
 	_ "github.com/bmizerany/pq"
