@@ -2,7 +2,7 @@ package ws
 
 import (
 	"fmt"
-	"socketio"
+	"github.com/murz/go-socket.io"
 )
 
 type Action struct {

@@ -1,7 +1,7 @@
 package http
 
 import (
-	"ego/tmpl"
+	"github.com/murz/ego/tmpl"
 	nhttp "net/http"
 	"io"
 	"encoding/json"

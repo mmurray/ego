@@ -2,7 +2,7 @@ package ws
 
 import (
 	"log"
-	"socketio"
+	"github.com/murz/go-socket.io"
 	"fmt"
 )
 
