@@ -12,7 +12,7 @@ import (
     // "regexp"
     "log"
     "fmt"
-    nhttp "net/http"
+    netHTTP "net/http"
 )
 
 type Server struct {
@@ -67,22 +67,22 @@ func (s *Server) Run(p string) {
 	s.RegisterWSActions(actions.WSActions()) 
 
 	// serve static assets from /public/
-	nhttp.Handle("/public/", nhttp.StripPrefix("/public/", nhttp.FileServer(nhttp.Dir(s.Package.Dir+"/public/"))))
+	netHTTP.Handle("/public/", netHTTP.StripPrefix("/public/", netHTTP.FileServer(netHTTP.Dir(s.Package.Dir+"/public/"))))
 
 	// redirect favicon requests to /public/
-	nhttp.Handle("/favicon.ico", nhttp.RedirectHandler("/public/favicon.ico", 301))
+	netHTTP.Handle("/favicon.ico", netHTTP.RedirectHandler("/public/favicon.ico", 301))
 
 	if actions.Count() == 0 {
 		// show the default page if there are no registered actions
-		nhttp.HandleFunc("/", defaultHandler)
+		netHTTP.HandleFunc("/", defaultHandler)
 	} else {
 		if len(actions.WSActions()) > 0 {
 			// register the socket.io handler if there are any ws actions.
 			sio := socketio.NewServer(nil)
-			nhttp.Handle("/socket.io/", nhttp.StripPrefix("/socket.io/", sio.Handler(s.WSRouter.ActionDispatchHandler())))
+			netHTTP.Handle("/socket.io/", netHTTP.StripPrefix("/socket.io/", sio.Handler(s.WSRouter.ActionDispatchHandler())))
 		}
 		// pipe all requests through the action dispatcher
-		nhttp.HandleFunc("/", s.HTTPRouter.ActionDispatchHandler())
+		netHTTP.HandleFunc("/", s.HTTPRouter.ActionDispatchHandler())
 	}
 
 	// parse mustache templates
@@ -95,21 +95,11 @@ func (s *Server) Run(p string) {
 	log.Print("/  __/  /_/ // /_/ /")
 	log.Print("\\___/_\\__, / \\____/ ")
 	log.Print("     /____/         ")
-	// log.Print("  ____   ____   ____  ")
-	// log.Print("_/ __ \\ / ___\\ /  _ \\ ")
-	// log.Print("\\  ___// /_/  >  <_> )")
-	// log.Print(" \\___  >___  / \\____/ ")
-	// log.Print("     \\/_____/         ")
-	// log.Print("  ___  __ _  ___  ")
-	// log.Print(" / _ \\/ _` |/ _ \\ ")
-	// log.Print("|  __/ (_| | (_) |")
-	// log.Print(" \\___|\\__, |\\___/ ")
-	// log.Print("      |___/       ")
 	log.Printf("ego server running on %v", p)
-	nhttp.ListenAndServe(p, nil)
+	netHTTP.ListenAndServe(p, nil)
 }
 
-func defaultHandler(w nhttp.ResponseWriter, httpReq *nhttp.Request) {
+func defaultHandler(w netHTTP.ResponseWriter, httpReq *netHTTP.Request) {
 	fmt.Fprint(w, "ego rulz")
 }
 

@@ -4,6 +4,7 @@ import (
 	"github.com/murz/ego/http"
 	"github.com/murz/ego/ws"
 	"reflect"
+	"log"
 )
 
 type ActionManager struct {
@@ -18,6 +19,7 @@ var am = &ActionManager{
 func Register(a interface{}) Action {
 	switch act := reflect.ValueOf(a).Interface().(type) {
 	case *http.Action:
+		log.Printf("%v", act.Path)
 		am.HTTPActions = append(am.HTTPActions, act)
 		return act
 	case *ws.Action:
@@ -28,6 +30,7 @@ func Register(a interface{}) Action {
 }
 
 func Count() int {
+	log.Printf("%v", len(am.HTTPActions) + len(am.WSActions))
 	return len(am.HTTPActions) + len(am.WSActions)
 }
 

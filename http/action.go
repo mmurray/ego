@@ -13,6 +13,8 @@ type Action struct {
 	Execute func(*Request) Result
 	Package string
 	View string
+	Layout string
+	Text string
 	request *Request
 }
 
@@ -33,8 +35,14 @@ func (a *Action) Dispatch(w nhttp.ResponseWriter, httpReq *nhttp.Request, urlpar
 		resp = &Response{
 			Context: map[string]interface{}{
 				"result": result,
-				"foo": "bar",
 			},
+		}
+	} else {
+		ctx, ok := resp.Context.(map[string]interface{})
+		if !ok {
+			ctx = make(map[string]interface{})
+			ctx["result"] = resp.Context
+			resp.Context = ctx
 		}
 	}
 	if (resp.StatusCode != 0) {
@@ -46,14 +54,29 @@ func (a *Action) Dispatch(w nhttp.ResponseWriter, httpReq *nhttp.Request, urlpar
 	case "xml":
 		resp.WriteXML(w)
 	default:
-		if _, isStr := result.(string); isStr {
+		if txt, isStr := result.(string); isStr {
+			resp = &Response{
+				Context: txt,
+			}
 			resp.WriteText(w)
 		} else {
+			log.Printf("resp view: %v", resp.View)
 			if resp.View == "" {
 				if a.View != "" {
 					resp.View = a.View
+				} else if resp.Text != "" {
+					resp.Context = resp.Text
+					resp.WriteText(w)
+					return
 				} else {
 					log.Panic("Cannot respond with HTML, you must specify either Response.View or Action.View")
+				}
+			}
+			if resp.Layout == "" {
+				if a.Layout != "" {
+					resp.Layout = a.Layout
+				} else {
+					resp.Layout = "application.html"
 				}
 			}
 			resp.WriteHTML(w)

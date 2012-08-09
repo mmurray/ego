@@ -12,6 +12,10 @@ func Render(key string, context interface{}) string {
 	return tm.Render(key, context)
 }
 
+func RenderInLayout(layoutKey string, key string, context interface{}) string {
+	return tm.RenderInLayout(layoutKey, key, context)
+}
+
 func Parse(filename string) {
 	tm.Parse(filename)
 }

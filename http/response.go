@@ -11,6 +11,8 @@ import (
 
 type Response struct {
 	View string
+	Layout string
+	Text string
 	StatusCode int
 	Context interface{}
 	Type string
@@ -20,7 +22,7 @@ func (r *Response) WriteHTML(w nhttp.ResponseWriter) {
 	if r.View == "" {
 		log.Panic("Attempted to call Response.WriteHTML when Response.View was not set")
 	}
-	io.WriteString(w, tmpl.Render(r.View, r.Context))
+	io.WriteString(w, tmpl.RenderInLayout(r.Layout, r.View, r.Context))
 }
 
 func (r *Response) WriteJSON(w nhttp.ResponseWriter) {
@@ -52,4 +54,9 @@ func (r *Response) WriteText(w nhttp.ResponseWriter) {
 var NotFound = &Response{
 	StatusCode: 404,
 	View: "/errors/404.html",
+}
+
+var NotImplemented = &Response{
+	StatusCode: 501,
+	View: "/errors/501.html",
 }

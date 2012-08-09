@@ -50,5 +50,6 @@ func (tm *TemplateManager) Render(key string, context interface{}) string {
 }
 
 func (tm *TemplateManager) RenderInLayout(layoutKey string, key string, context interface{}) string {
-	return tm.templates[key].RenderInLayout(tm.templates[layoutKey], context)
+	log.Printf("layoutKey: %v", "layouts/"+layoutKey)
+	return tm.templates[key].RenderInLayout(tm.templates["layouts/"+layoutKey], context)
 }
