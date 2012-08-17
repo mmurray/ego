@@ -15,7 +15,6 @@ type Action struct {
 	View string
 	Layout string
 	Text string
-	request *Request
 }
 
 type Result interface{}
@@ -34,14 +33,14 @@ func (a *Action) Dispatch(w nhttp.ResponseWriter, httpReq *nhttp.Request, urlpar
 	if !ok {
 		resp = &Response{
 			Context: map[string]interface{}{
-				"result": result,
+				"Result": result,
 			},
 		}
 	} else {
 		ctx, ok := resp.Context.(map[string]interface{})
 		if !ok {
 			ctx = make(map[string]interface{})
-			ctx["result"] = resp.Context
+			ctx["Result"] = resp.Context
 			resp.Context = ctx
 		}
 	}
@@ -79,6 +78,12 @@ func (a *Action) Dispatch(w nhttp.ResponseWriter, httpReq *nhttp.Request, urlpar
 					resp.Layout = "application.html"
 				}
 			}
+			if mp, isMap := resp.Context.(map[string]interface{}); isMap {
+				log.Printf("ctx: %v", mp["Result"])
+			} else {
+				log.Printf("not a map")
+			}
+			log.Printf("ctx: %v", resp.Context)
 			resp.WriteHTML(w)
 		}
 	}

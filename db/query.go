@@ -28,7 +28,7 @@ func NewQuery(model interface{}) *Query {
 			keyField = field.Name
 		}
 	}
-	query := &Query {
+	query := &Query{
 		model: model,
 		keyField: keyField,
 		val: val,

@@ -22,7 +22,7 @@ func (r *Response) WriteHTML(w nhttp.ResponseWriter) {
 	if r.View == "" {
 		log.Panic("Attempted to call Response.WriteHTML when Response.View was not set")
 	}
-	io.WriteString(w, tmpl.RenderInLayout(r.Layout, r.View, r.Context))
+	tmpl.Render(w, r.View, r.Layout, r.Context)
 }
 
 func (r *Response) WriteJSON(w nhttp.ResponseWriter) {
