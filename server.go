@@ -10,6 +10,7 @@ import (
 	"github.com/murz/ego/actions"
     "go/build"
     "github.com/murz/go-socket.io"
+    "flag"
     // "regexp"
     "log"
     "fmt"
@@ -57,7 +58,12 @@ func (s *Server) RegisterWSActions(actions []*ws.Action) {
 	}
 }
 
-func (s *Server) Run(p string) {
+func (s *Server) Run(p int) {
+	// parse flags
+	var isDev = flag.Bool("dev", false, "Start server in development mode.")
+	var port = flag.Int("port", p, "HTTP server port.")
+	flag.Parse()
+
 	// allow plugins to do some intialization
 	for _, plugin := range plugins.All() {
 		if plugin.OnStart != nil {
@@ -110,8 +116,11 @@ func (s *Server) Run(p string) {
 	log.Print("/  __/  /_/ // /_/ /")
 	log.Print("\\___/_\\__, / \\____/ ")
 	log.Print("     /____/         ")
-	log.Printf("ego server running on %v", p)
-	err := netHTTP.ListenAndServe(p, nil)
+	log.Printf("ego server running on %v", *port)
+	if (*isDev) {
+		log.Printf(":: development mode ::")
+	}
+	err := netHTTP.ListenAndServe(fmt.Sprintf(":%v", *port), nil)
 
 	// give plugins a chance to cleanup
 	for _, plugin := range plugins.All() {
