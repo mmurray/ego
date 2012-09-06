@@ -14,9 +14,6 @@ var templates = make(map[string]*template.Template)
 var helpers = make([]*Helper, 0)
 var partials = make([]*Partial, 0)
 
-// TODO: parse partials into a structure first,
-// then use them in Parse()
-
 func Parse(filename string) {
 	basePath := pkgName + "/app/views/"
 	dirlist, err := ioutil.ReadDir(basePath + "layouts")
@@ -26,31 +23,41 @@ func Parse(filename string) {
 	for _, f := range dirlist {
 		filenames := []string {
 			// basePath + "layouts/" + f.Name(),
-			// TODO: add partials
 			filename,
 		}
 		key := f.Name() + "||" + filename
+		keynl := filename
 		if pkgName != "" {
 			key = strings.Replace(key, basePath, "", -1)
-			log.Printf("KEY: %v", key)
+			keynl = strings.Replace(keynl, basePath, "", -1)
 		}
 		t := template.New(key)
+		tnl := template.New(filename)
 		for _, helper := range helpers {
 			t.Funcs(template.FuncMap{
+				helper.Name: helper.Execute,
+	        })
+	        tnl.Funcs(template.FuncMap{
 				helper.Name: helper.Execute,
 	        })
 		}
 		for _, partial := range partials {
 			partialTemplate := t.New(partial.Name)
 			partialTemplate.Parse(partial.TemplateString)
+			partialTemplateNoLayout := tnl.New(partial.Name)
+			partialTemplateNoLayout.Parse(partial.TemplateString)
 		}
 		file, _ := ioutil.ReadFile(basePath + "layouts/" + f.Name())
+		filenl, _ := ioutil.ReadFile(basePath + keynl)
 		t.Parse(string(file))
 		t.ParseFiles(filenames...)
+		tnl.Parse(string(filenl))
 		if (err != nil) {
 			log.Panic(err)
 		}
 		templates[key] = t
+		log.Printf("writing %v to %v", filename, tnl)
+		templates[keynl] = tnl
 	}
 }
 
@@ -98,8 +105,11 @@ func ParsePartials(dirname string) {
 }
 
 func Render(wr io.Writer, key string, layout string, context interface{}) {
-	log.Printf("looking up: %v", layout+"||"+key)
-	t := templates[layout + "||" + key]
+	if (layout != "") {
+		layout = layout+"||"
+	}
+	log.Printf("looking up: %v", layout+key)
+	t := templates[layout + key]
 	log.Printf("found: %v", t)
 	err := t.Execute(wr, context)
 	if (err != nil) {
