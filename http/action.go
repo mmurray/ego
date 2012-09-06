@@ -71,6 +71,10 @@ func (a *Action) Dispatch(w nhttp.ResponseWriter, httpReq *nhttp.Request, urlpar
 					log.Panic("Cannot respond with HTML, you must specify either Response.View or Action.View")
 				}
 			}
+			log.Printf("respView: %v", resp.View[0:1]);
+			if resp.View[0:1] == "/" {
+				resp.View = resp.View[1:]
+			}
 			if resp.Layout == "" {
 				if a.Layout != "" {
 					resp.Layout = a.Layout

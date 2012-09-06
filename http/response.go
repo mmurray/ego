@@ -54,9 +54,11 @@ func (r *Response) WriteText(w nhttp.ResponseWriter) {
 var NotFound = &Response{
 	StatusCode: 404,
 	View: "/errors/404.html",
+	Layout: "none",
 }
 
 var NotImplemented = &Response{
 	StatusCode: 501,
 	View: "/errors/501.html",
+	Layout: "none",
 }
