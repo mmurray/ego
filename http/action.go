@@ -82,9 +82,6 @@ func (a *Action) Dispatch(w nhttp.ResponseWriter, httpReq *nhttp.Request, urlpar
 					resp.Layout = "application.html"
 				}
 			}
-			if resp.Layout == "none" {
-				resp.Layout = ""
-			}
 			if mp, isMap := resp.Context.(map[string]interface{}); isMap {
 				log.Printf("ctx: %v", mp["Result"])
 			} else {

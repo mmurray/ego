@@ -105,12 +105,16 @@ func ParsePartials(dirname string) {
 }
 
 func Render(wr io.Writer, key string, layout string, context interface{}) {
+	if (layout == "none") {
+		layout = ""
+	}
 	if (layout != "") {
 		layout = layout+"||"
 	}
 	log.Printf("looking up: %v", layout+key)
 	t := templates[layout + key]
 	log.Printf("found: %v", t)
+
 	err := t.Execute(wr, context)
 	if (err != nil) {
 		panic(err)
