@@ -22,7 +22,13 @@ func (r *Response) WriteHTML(w nhttp.ResponseWriter) {
 	if r.View == "" {
 		log.Panic("Attempted to call Response.WriteHTML when Response.View was not set")
 	}
-	tmpl.Render(w, r.View, r.Layout, r.Context)
+	m, ok := r.Context.(map[string]interface{})
+	if ok {
+		tmpl.Render(w, r.View, m)
+	} else {
+		log.Panic("Attempted to call Response.WriteHTML when Response.Context was not a map")
+	}
+	// tmpl.Render(w, r.View, r.Layout, r.Context)
 }
 
 func (r *Response) WriteJSON(w nhttp.ResponseWriter) {

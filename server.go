@@ -2,113 +2,100 @@ package ego
 
 import (
 	"github.com/murz/ego/http"
-	"github.com/murz/ego/ws"
-	"github.com/murz/ego/tmpl"
-	"github.com/murz/ego/cfg"
-	"github.com/murz/ego/db"
-	"github.com/murz/ego/plugins"
-	"github.com/murz/ego/actions"
-    "go/build"
-    "github.com/murz/go-socket.io"
+	// "github.com/murz/ego/tmpl"
+	// "github.com/murz/ego/cfg"
+	// "github.com/murz/ego/db"
+	// "github.com/murz/ego/plugins"
+	// "github.com/murz/ego/cache"
+    // "go/build"
     "flag"
     // "regexp"
     "log"
     "fmt"
+    "os"
+    "strconv"
+    "time"
     netHTTP "net/http"
 )
 
 type Server struct {
+	// Package *build.Package
+	PackageName string
 	HTTPRouter *http.Router
-	WSRouter *ws.Router
-	Package *build.Package
-	Config *cfg.ConfigMap
+	// Config *cfg.ConfigMap
 }
 
 func NewServer(pkgName string) *Server {
-	pkg, err := build.Default.Import(pkgName, "", build.FindOnly)
-    if err != nil {
-        pkg = &build.Package{
-        	Dir: "/app",
-        }
-    }
-	return &Server {
-		Package: pkg,
-		HTTPRouter: http.NewRouter(),
-		WSRouter: ws.NewRouter(),
+	// pkg, err := build.Default.Import(pkgName, "", build.FindOnly)
+    // if err != nil {
+    //     pkg = &build.Package{
+    //     	Dir: "/app",
+    //     }
+    // }
+	return &Server{
+		// Package: pkg,
+		PackageName: pkgName,
+		HTTPRouter: http.GetDefaultRouter(),
 	}
 }
 
-func (s *Server) RegisterHTTPAction(action *http.Action) {
-	s.HTTPRouter.Register(action)
-}
-
-func (s *Server) RegisterHTTPActions(actions []*http.Action) {
-	for _, action := range actions {
-		s.RegisterHTTPAction(action)
+func (s *Server) Run() {
+	startTime := time.Now().UnixNano() / 1000000
+	// determine default port
+	envport := os.Getenv("PORT")
+	p, err := strconv.ParseInt(envport, 0, 0)
+	if envport == "" || err != nil {
+		p = 5000
 	}
-}
 
-func (s *Server) RegisterWSAction(action *ws.Action) {
-	s.WSRouter.Register(action)
-}
-
-func (s *Server) RegisterWSActions(actions []*ws.Action) {
-	for _, action := range actions {
-		s.RegisterWSAction(action)
-	}
-}
-
-func (s *Server) Run(p int) {
 	// parse flags
 	var isDev = flag.Bool("dev", false, "Start server in development mode.")
-	var port = flag.Int("port", p, "HTTP server port.")
+	var port = flag.Int("port", int(p), "HTTP server port.")
 	flag.Parse()
 
+	// read the routes file
+
+	
+
 	// allow plugins to do some intialization
-	for _, plugin := range plugins.All() {
-		if plugin.OnStart != nil {
-			plugin.OnStart()
-		}
-	}
+	// for _, plugin := range plugins.All() {
+	// 	if plugin.OnStart != nil {
+	// 		plugin.OnStart()
+	// 	}
+	// }
 
 	// parse the config files
-	cfg.ParseDir(s.Package.Dir + "/conf")
+	// cfg.ParseDir(s.Package.Dir + "/conf")
 
-	db.Connect(cfg.Get("db"))
-
-	// register all actions that were buffered in the action manager
-	s.RegisterHTTPActions(actions.HTTPActions())
-	s.RegisterWSActions(actions.WSActions()) 
+	// db.Connect(cfg.Get("db"))
+	
+	// cache.Init()
 
 	// serve static assets from /public/
-	netHTTP.Handle("/public/", netHTTP.StripPrefix("/public/", netHTTP.FileServer(netHTTP.Dir(s.Package.Dir+"/public/"))))
+	netHTTP.Handle("/public/", netHTTP.StripPrefix("/public/", netHTTP.FileServer(netHTTP.Dir(s.PackageName+"/public/"))))
 
 	// redirect favicon requests to /public/
 	netHTTP.Handle("/favicon.ico", netHTTP.RedirectHandler("/public/favicon.ico", 301))
 
-	if actions.Count() == 0 {
-		// show the default page if there are no registered actions
-		netHTTP.HandleFunc("/", defaultHandler)
-	} else {
-		if len(actions.WSActions()) > 0 {
-			// register the socket.io handler if there are any ws actions.
-			sio := socketio.NewServer(nil)
-			netHTTP.Handle("/socket.io/", netHTTP.StripPrefix("/socket.io/", sio.Handler(s.WSRouter.ActionDispatchHandler())))
-		}
-		// pipe all requests through the action dispatcher
-		netHTTP.HandleFunc("/", s.HTTPRouter.ActionDispatchHandler())
-	}
+	// if actions.Count() == 0 {
+	// 	// show the default page if there are no registered actions
+	// 	netHTTP.HandleFunc("/", defaultHandler)
+	// } else {
+
+	// pipe all requests through the action dispatcher
+	netHTTP.HandleFunc("/", http.ActionDispatchHandler(s.HTTPRouter))
+	// }
 
 	// parse mustache templates
-	tmpl.SetPackageName(s.Package.Dir)
-    tmpl.ParseDir("/app/views")
+	// tmpl.SetPackageName(s.Package.Dir)
+ //    tmpl.ParseDir("/app/views")
 
     // call into plugins again now that everything is ready
-	for _, plugin := range plugins.All() {
-		if (plugin.OnReady != nil) {
-			plugin.OnReady()
-		}
-	}
+	// for _, plugin := range plugins.All() {
+	// 	if (plugin.OnReady != nil) {
+	// 		plugin.OnReady()
+	// 	}
+	// }
 
 	// listen and serve
 	log.Print("____________ ______ ")
@@ -120,14 +107,15 @@ func (s *Server) Run(p int) {
 	if (*isDev) {
 		log.Printf(":: development mode ::")
 	}
-	err := netHTTP.ListenAndServe(fmt.Sprintf(":%v", *port), nil)
+	log.Printf("## startup time: %dms ##", time.Now().UnixNano() / 1000000 - startTime)
+	err = netHTTP.ListenAndServe(fmt.Sprintf(":%v", *port), nil)
 
 	// give plugins a chance to cleanup
-	for _, plugin := range plugins.All() {
-		if plugin.OnStop != nil {
-			plugin.OnStop()
-		}
-	}
+	// for _, plugin := range plugins.All() {
+	// 	if plugin.OnStop != nil {
+	// 		plugin.OnStop()
+	// 	}
+	// }
 
 	log.Fatal(err)
 }

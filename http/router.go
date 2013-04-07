@@ -5,19 +5,61 @@ import (
 	"log"
 	"strings"
 	"fmt"
-	nhttp "net/http"
 )
 
+// Routes in ego are stored in a tree data structure for quick lookup.
+// RouterNode represents a single node in that tree.
 type RouterNode struct {
 	Value string
 	ParamKeys []string
 	Regexp *regexp.Regexp
 	ChildNodes map[string]*RouterNode
-	Action *Action
+	Route *Route
 }
 
-func (n *RouterNode) HasValue() bool {
-	return n.Value != ""
+// Represents a router, which contains a tree of RouterNodes.
+type Router struct {
+	KeyRegexp *regexp.Regexp
+	ParamRegexp *regexp.Regexp
+	RootNode *RouterNode
+}
+
+// Represents a binding from a path to a controller action.
+type Route struct {
+	ControllerName string
+	ActionName string
+	Path Path
+}
+
+// Represents an http action path.
+type Path struct {
+	Value string
+	Method string
+}
+
+// A helper for easily registering routes.
+type RouteBuilder struct {
+	path *Path
+}
+
+// Builds a wildcard path with the given value.
+func Match(value string) *RouteBuilder {
+	return &RouteBuilder{
+		path: &Path{
+			Value: value,
+			Method: "*",
+		},
+	}
+}
+
+// Builds a GET path with the given value.
+func Get(value string) *RouteBuilder {
+	return &RouteBuilder{
+		path: &Path{
+			Value: value,
+			Method: "GET",
+		},
+	}
 }
 
 func NewRouterNode() *RouterNode {
@@ -26,12 +68,6 @@ func NewRouterNode() *RouterNode {
 		ChildNodes: make(map[string]*RouterNode),
 		Value: "/",
 	}
-}
-
-type Router struct {
-	KeyRegexp *regexp.Regexp
-	ParamRegexp *regexp.Regexp
-	RootNode *RouterNode
 }
 
 func NewRouter() *Router {
@@ -45,31 +81,48 @@ func NewRouter() *Router {
 	return r
 }
 
-func (r *Router) Keys(a *Action) []string {
-	matches := strings.Split(a.Path, "/")
-	if (len(matches) < 2) {
-		log.Panicf("ego: \"%v\" is not a valid action path.", a.Path)
+var router = NewRouter()
+
+func GetDefaultRouter() *Router {
+	return router
+}
+
+// Binds the path to a route and registers it as a node in the router tree.
+func (rb RouteBuilder) To(value string) {
+	pieces := strings.Split(value, ".")
+	if (len(pieces) != 2) {
+		log.Panicf("ego: \"%v\" is not a valid controller action.", value)
 	}
+	router.Register(&Route{
+		Path: *rb.path,
+		ControllerName: pieces[0],
+		ActionName: pieces[1],
+	})
+}
+
+func (r *Router) Keys(p *Path) []string {
+	path := p.Value
+	if (path[0:1] == "/") {
+		path = path[1:len(path)] // shave off the first "/" if there is one.
+	}
+	matches := strings.Split(path, "/")
 	return matches
 }
 
-func (r *Router) Register(a *Action) {
-	keys := r.Keys(a)
+func (r *Router) Register(route *Route) {
+	p := &route.Path
+	keys := r.Keys(p)
 	curNode := r.RootNode
-	if a.Method == "" {
-		a.Method = "*"
-	}
 
-	if curNode.ChildNodes[a.Method] != nil {
-		curNode = curNode.ChildNodes[a.Method]
+	if curNode.ChildNodes[p.Method] != nil {
+		curNode = curNode.ChildNodes[p.Method]
 	} else {
 		node := NewRouterNode()
-		node.Value = a.Method
-		curNode.ChildNodes[a.Method] = node
+		node.Value = p.Method
+		curNode.ChildNodes[p.Method] = node
 		curNode = node
 	}
 
-	keys = keys[1:len(keys)]
 	for len(keys) != 0 {
 		key := keys[0]
 		keys = keys[1:len(keys)]
@@ -103,26 +156,26 @@ func (r *Router) Register(a *Action) {
 			}
 		}
 	}
-	curNode.Action = a
+	curNode.Route = route
 }
 
-func (r *Router) Lookup(path string, method string) (*Action, map[string]interface{}, bool) {
-	tokens := strings.Split(path, "/")
-	tokens = tokens[1:len(tokens)] // paths look like "/foo" so the first token will always be ""
+func (r *Router) Lookup(path string, method string) (*Route, map[string]interface{}, bool) {
 	curNode := r.RootNode.ChildNodes[method]
 	if curNode == nil {
 		return nil, nil, false
 	}
+	if (path[0:1] == "/") {
+		path = path[1:len(path)] // shave off the first "/" if there is one.
+	}
+	tokens := strings.Split(path, "/")
 	match := false
 	globparams := make(map[string]interface{})
 	for i, token := range tokens {
 		found := false
-		log.Printf("-- level%v: %v",i, token)
 		if token == "" && i == len(tokens) - 1 {
 			match = true
 			break;
 		}
-		log.Printf("%v", curNode.ChildNodes)
 		if (token == curNode.Value) {
 			if  i == len(tokens) - 1 {
 				match = true
@@ -130,8 +183,6 @@ func (r *Router) Lookup(path string, method string) (*Action, map[string]interfa
 			}
 		}
 		for _, node := range curNode.ChildNodes {
-			log.Printf("nv: %v", node.Value)
-			log.Printf("t: %v", token)
 			if node.Value == token {
 				curNode = node
 				found = true
@@ -140,9 +191,7 @@ func (r *Router) Lookup(path string, method string) (*Action, map[string]interfa
 					break;
 				}
 			} else if node.Regexp != nil {
-				log.Printf("rxp: %v", node.Regexp)
 				matches := node.Regexp.FindAllStringSubmatch(token, -1)
-				log.Printf("matches; %v", matches)
 				if len(matches) >= 1 {
 					curNode = node
 					found = true
@@ -152,8 +201,6 @@ func (r *Router) Lookup(path string, method string) (*Action, map[string]interfa
 					} else {
 						params = matches[0]
 					}
-					log.Printf("%v", curNode.ParamKeys)
-					log.Printf("%v vs %v", len(params), len(curNode.ParamKeys))
 					for i, key := range curNode.ParamKeys {
 						globparams[key] = params[i]
 					}
@@ -168,27 +215,11 @@ func (r *Router) Lookup(path string, method string) (*Action, map[string]interfa
 			break;
 		}
 	}
-	if (match && curNode.Action != nil) {
-		return curNode.Action, globparams, true
+	if (match && curNode.Route != nil) {
+		return curNode.Route, globparams, true
 	}
 	return nil, nil, false
 	// for len(tokens) != 0 {
 
 	// }
-}
-
-func (r *Router) ActionDispatchHandler() nhttp.HandlerFunc {
-	return func(w nhttp.ResponseWriter, httpReq *nhttp.Request) {
-		reqType := ""
-		a, p, found := r.Lookup(httpReq.URL.Path, httpReq.Method)
-		if !found {
-			// try the wildcard tree
-			a, p, found = r.Lookup(httpReq.URL.Path, "*")
-			if !found {
-				NotFoundAction.Dispatch(w, httpReq, nil, reqType)
-				return;
-			}
-		}
-		a.Dispatch(w, httpReq, p, reqType)
-	}
 }
