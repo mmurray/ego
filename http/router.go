@@ -159,7 +159,7 @@ func (r *Router) Register(route *Route) {
 	curNode.Route = route
 }
 
-func (r *Router) Lookup(path string, method string) (*Route, map[string]interface{}, bool) {
+func (r *Router) Lookup(path string, method string) (*Route, map[string]string, bool) {
 	curNode := r.RootNode.ChildNodes[method]
 	if curNode == nil {
 		return nil, nil, false
@@ -169,7 +169,7 @@ func (r *Router) Lookup(path string, method string) (*Route, map[string]interfac
 	}
 	tokens := strings.Split(path, "/")
 	match := false
-	globparams := make(map[string]interface{})
+	globparams := make(map[string]string)
 	for i, token := range tokens {
 		found := false
 		if token == "" && i == len(tokens) - 1 {

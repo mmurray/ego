@@ -2,7 +2,7 @@ package ego
 
 import (
 	"github.com/murz/ego/http"
-	// "github.com/murz/ego/tmpl"
+	"github.com/murz/ego/tmpl"
 	// "github.com/murz/ego/cfg"
 	// "github.com/murz/ego/db"
 	// "github.com/murz/ego/plugins"
@@ -88,7 +88,7 @@ func (s *Server) Run() {
 
 	// parse mustache templates
 	// tmpl.SetPackageName(s.Package.Dir)
- //    tmpl.ParseDir("/app/views")
+    tmpl.ParseDir("app/views")
 
     // call into plugins again now that everything is ready
 	// for _, plugin := range plugins.All() {

@@ -14,7 +14,7 @@ type Response struct {
 	Layout string
 	Text string
 	StatusCode int
-	Context interface{}
+	Context map[string]interface{}
 	Type string
 }
 
@@ -22,12 +22,9 @@ func (r *Response) WriteHTML(w nhttp.ResponseWriter) {
 	if r.View == "" {
 		log.Panic("Attempted to call Response.WriteHTML when Response.View was not set")
 	}
-	m, ok := r.Context.(map[string]interface{})
-	if ok {
-		tmpl.Render(w, r.View, m)
-	} else {
-		log.Panic("Attempted to call Response.WriteHTML when Response.Context was not a map")
-	}
+	log.Printf("ctx: %v", r.Context)
+	tmpl.Render(w, r.View, r.Context)
+	
 	// tmpl.Render(w, r.View, r.Layout, r.Context)
 }
 
@@ -49,12 +46,7 @@ func (r *Response) WriteXML(w nhttp.ResponseWriter) {
 }
 
 func (r *Response) WriteText(w nhttp.ResponseWriter) {
-	str, ok := r.Context.(string)
-	if ok {
-		io.WriteString(w, str)
-	} else {
-		log.Panic("Attempted to call Response.WriteText when Response.Context was not a string")
-	}
+	io.WriteString(w, r.Text)
 }
 
 var NotFound = &Response{

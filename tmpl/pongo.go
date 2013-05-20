@@ -20,10 +20,11 @@ func (te *PongoTemplateEngine) Compile(t string) CompiledTemplate {
 	}
 }
 
-func (tpl PongoTemplate) Execute(ctx map[string]interface{}) (out string, err error) {
-	return tpl.Execute(pongo.Context(ctx))
+func (tpl PongoTemplate) Execute(ctx map[string]interface{}) (out *string, err error) {
+	return tpl.tmpl.Execute(&pongo.Context{})
 }
 
 func (tpl PongoTemplate) ExecuteRW(w http.ResponseWriter, ctx map[string]interface{}) error {
-	return tpl.ExecuteRW(w, pongo.Context(ctx))
+	pctx := pongo.Context(ctx)
+	return tpl.tmpl.ExecuteRW(w, &pctx)
 }

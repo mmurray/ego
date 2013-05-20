@@ -15,11 +15,11 @@ type TemplateEngine interface {
 }
 
 type CompiledTemplate interface {
-	Execute(map[string]interface{}) (string, error)
+	Execute(map[string]interface{}) (*string, error)
 	ExecuteRW(http.ResponseWriter, map[string]interface{}) error
 }
 
-var templateEngine TemplateEngine = &PongoTemplateEngine{}
+var templateEngine TemplateEngine = &HandlebarsTemplateEngine{}
 var templates = make(map[string]CompiledTemplate)
 
 func SetTemplateEngine(e TemplateEngine) {
@@ -30,7 +30,7 @@ func Render(w http.ResponseWriter, name string, ctx map[string]interface{}) {
 	if (templates[name] == nil) {
 		panic(fmt.Sprintf("Unknown template: %s", name))
 	}
-
+log.Printf("execute rw..")
 	err := templates[name].ExecuteRW(w, ctx)
 	if (err != nil) {
 		panic(err)
@@ -48,7 +48,7 @@ func Parse(filename string) {
 	// 	templateEngine.Compile(string(file))
 	// }
 	// file, _ = iotuil.ReadFile(filename)
-	log.Printf("YAR: %v", filename)
+	log.Printf("YARRR: %v", filename)
 	templates[filename] = templateEngine.Compile(filename)
 }
 

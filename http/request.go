@@ -4,12 +4,27 @@ import (
 	nhttp "net/http"
 	"reflect"
 	"log"
+	"strconv"
+	"errors"
 )
 
 type Request struct {
-	Params map[string]interface{}
+	Params ParamMap
 	Cookies map[string]string
 	Context *RequestContext
+}
+
+type ParamMap map[string]interface{}
+
+func (pm ParamMap) Int(key string) (result int, err error) {
+	if val, ok := pm[key]; ok {
+		if str, ok := val.(string); ok {
+			if i, err := strconv.ParseInt(str, 10, 0); err == nil {
+				return int(i), nil
+			}
+		}
+	}
+	return -1, errors.New("not found")
 }
 
 type RequestContext struct {
