@@ -72,7 +72,8 @@ func (s *Server) Run() {
 	// cache.Init()
 
 	// serve static assets from /public/
-	netHTTP.Handle("/public/", netHTTP.StripPrefix("/public/", netHTTP.FileServer(netHTTP.Dir(s.PackageName+"/public/"))))
+	fmt.Println("public: ", s.PackageName + "/public/")
+	netHTTP.Handle("/public/", netHTTP.StripPrefix("/public/", netHTTP.FileServer(netHTTP.Dir("public/"))))
 
 	// redirect favicon requests to /public/
 	netHTTP.Handle("/favicon.ico", netHTTP.RedirectHandler("/public/favicon.ico", 301))
