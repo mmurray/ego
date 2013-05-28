@@ -55,8 +55,8 @@ func ActionDispatchHandler(r *Router) nhttp.HandlerFunc {
 			// try the wildcard tree
 			route, _, found = r.Lookup(httpReq.URL.Path, "*")
 			if !found {
-				log.Printf("@@@@not found");
-				staticMux.ServeHTTP(NewStaticFileResponseWriterWrapper(w), httpReq)
+				wrapper := NewStaticFileResponseWriter(w)
+				staticMux.ServeHTTP(wrapper, httpReq)
 				// NotFoundAction.Dispatch(w, httpReq, nil, reqType)
 				return;
 			}
@@ -143,14 +143,11 @@ func ActionDispatchHandler(r *Router) nhttp.HandlerFunc {
 
 type staticFileResponseWriter struct {
 	writer nhttp.ResponseWriter
-    finished bool
 }
 
-func NewStaticFileResponseWriterWrapper(rw nhttp.ResponseWriter) staticFileResponseWriter {
-	fmt.Println("##NEW!")
+func NewStaticFileResponseWriter(rw nhttp.ResponseWriter) staticFileResponseWriter {
 	return staticFileResponseWriter{
 		writer: rw,
-		finished: false,
 	}
 }
 
@@ -159,11 +156,7 @@ func (rw staticFileResponseWriter) Header() nhttp.Header {
 }
 
 func (rw staticFileResponseWriter) Write(data []byte) (int, error) {
-	// fmt.Fprintln(rw, error)
-	fmt.Println("WRITING??: ", string(data))
-	fmt.Printf("&%v\n", rw)
-	if rw.finished == true {
-		fmt.Println("DONE!!!!")
+	if string(data) == "404 page not found\n" {
 		return 0, nil
 	}
 	return rw.writer.Write(data)
@@ -173,8 +166,5 @@ func (rw staticFileResponseWriter) WriteHeader(code int) {
 	rw.writer.WriteHeader(code)
 	if code == nhttp.StatusNotFound {
 		fmt.Fprintln(rw, "404 bitches!")
-		fmt.Println("DONE!")
-		rw.finished = true
-		fmt.Printf("\n*%v\n", rw)
 	}
 }
