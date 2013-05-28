@@ -71,20 +71,20 @@ func (s *Server) Run() {
 	
 	// cache.Init()
 
-	// serve static assets from /public/
-	fmt.Println("public: ", s.PackageName + "/public/")
-	netHTTP.Handle("/public/", netHTTP.StripPrefix("/public/", netHTTP.FileServer(netHTTP.Dir("public/"))))
-
 	// redirect favicon requests to /public/
-	netHTTP.Handle("/favicon.ico", netHTTP.RedirectHandler("/public/favicon.ico", 301))
+	// netHTTP.Handle("/favicon.ico", netHTTP.RedirectHandler("/public/favicon.ico", 301))
 
 	// if actions.Count() == 0 {
 	// 	// show the default page if there are no registered actions
 	// 	netHTTP.HandleFunc("/", defaultHandler)
 	// } else {
 
+	// serve static assets from /public/
+	// netHTTP.Handle("/", netHTTP.StripPrefix("/public/", netHTTP.FileServer(netHTTP.Dir("public/"))))
+
 	// pipe all requests through the action dispatcher
 	netHTTP.HandleFunc("/", http.ActionDispatchHandler(s.HTTPRouter))
+
 	// }
 
 	// parse mustache templates
@@ -124,4 +124,3 @@ func (s *Server) Run() {
 func defaultHandler(w netHTTP.ResponseWriter, httpReq *netHTTP.Request) {
 	fmt.Fprint(w, "ego rulz")
 }
-

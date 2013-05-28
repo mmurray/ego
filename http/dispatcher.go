@@ -7,6 +7,7 @@ import (
 	"time"
 	"strconv"
 	"strings"
+	// "errors"
 	nhttp "net/http"
 )
 
@@ -40,15 +41,22 @@ func RegisterAction(key string, t reflect.Type, keys []string, fields map[string
 
 // Returns a net/http handler function for dispatching ego actions using the given router.
 func ActionDispatchHandler(r *Router) nhttp.HandlerFunc {
+	// setup static file server   
+	fmt.Printf("@@@NEW STATIC MX")
+	var staticMux = nhttp.NewServeMux()
+	staticMux.Handle("/", nhttp.StripPrefix("/public/", nhttp.FileServer(nhttp.Dir("public/"))))
+
 	return func(w nhttp.ResponseWriter, httpReq *nhttp.Request) {
 		startTime := time.Now().UnixNano() / 1000000
 		// reqType := ""
+
 		route, pathParams, found := r.Lookup(httpReq.URL.Path, httpReq.Method)
 		if !found {
 			// try the wildcard tree
 			route, _, found = r.Lookup(httpReq.URL.Path, "*")
 			if !found {
-				log.Printf("not found");
+				log.Printf("@@@@not found");
+				staticMux.ServeHTTP(NewStaticFileResponseWriterWrapper(w), httpReq)
 				// NotFoundAction.Dispatch(w, httpReq, nil, reqType)
 				return;
 			}
@@ -130,5 +138,43 @@ func ActionDispatchHandler(r *Router) nhttp.HandlerFunc {
 			route.ControllerName,
 			route.ActionName,
 			(time.Now().UnixNano() / 1000000) - startTime);
+	}
+}
+
+type staticFileResponseWriter struct {
+	writer nhttp.ResponseWriter
+    finished bool
+}
+
+func NewStaticFileResponseWriterWrapper(rw nhttp.ResponseWriter) staticFileResponseWriter {
+	fmt.Println("##NEW!")
+	return staticFileResponseWriter{
+		writer: rw,
+		finished: false,
+	}
+}
+
+func (rw staticFileResponseWriter) Header() nhttp.Header {
+	return rw.writer.Header()
+}
+
+func (rw staticFileResponseWriter) Write(data []byte) (int, error) {
+	// fmt.Fprintln(rw, error)
+	fmt.Println("WRITING??: ", string(data))
+	fmt.Printf("&%v\n", rw)
+	if rw.finished == true {
+		fmt.Println("DONE!!!!")
+		return 0, nil
+	}
+	return rw.writer.Write(data)
+}
+
+func (rw staticFileResponseWriter) WriteHeader(code int) {
+	rw.writer.WriteHeader(code)
+	if code == nhttp.StatusNotFound {
+		fmt.Fprintln(rw, "404 bitches!")
+		fmt.Println("DONE!")
+		rw.finished = true
+		fmt.Printf("\n*%v\n", rw)
 	}
 }
