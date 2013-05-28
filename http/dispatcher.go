@@ -7,6 +7,7 @@ import (
 	"time"
 	"strconv"
 	"strings"
+        "os"
 	// "errors"
 	nhttp "net/http"
 )
@@ -42,9 +43,12 @@ func RegisterAction(key string, t reflect.Type, keys []string, fields map[string
 // Returns a net/http handler function for dispatching ego actions using the given router.
 func ActionDispatchHandler(r *Router) nhttp.HandlerFunc {
 	// setup static file server   
-	fmt.Printf("@@@NEW STATIC MX")
-	var staticMux = nhttp.NewServeMux()
-	staticMux.Handle("/", nhttp.StripPrefix("/public/", nhttp.FileServer(nhttp.Dir("public/"))))
+	var publicMux = nhttp.NewServeMux()
+        var publicFs = justFilesFilesystem{nhttp.Dir("./public")}
+	publicMux.Handle("/", nhttp.FileServer(publicFs))
+
+	var assetsMux = nhttp.NewServeMux()
+	assetsMux.Handle("/", nhttp.StripPrefix("/assets", nhttp.FileServer(justFilesFilesystem{nhttp.Dir("./.ego-genfiles/assets")})))
 
 	return func(w nhttp.ResponseWriter, httpReq *nhttp.Request) {
 		startTime := time.Now().UnixNano() / 1000000
@@ -55,8 +59,22 @@ func ActionDispatchHandler(r *Router) nhttp.HandlerFunc {
 			// try the wildcard tree
 			route, _, found = r.Lookup(httpReq.URL.Path, "*")
 			if !found {
-				wrapper := NewStaticFileResponseWriter(w)
-				staticMux.ServeHTTP(wrapper, httpReq)
+                                wrapper := NewStaticFileResponseWriter(w)
+                                if (strings.HasPrefix(httpReq.URL.Path, "/assets")) {
+                                  if strings.HasSuffix(httpReq.URL.Path, "/assets") || strings.HasSuffix(httpReq.URL.Path, "/assets/") {
+                                    wrapper.WriteHeader(nhttp.StatusNotFound);
+                                    return;
+                                  }
+                                  assetsMux.ServeHTTP(wrapper, httpReq)
+                                } else {
+                                  if (strings.HasSuffix(httpReq.URL.Path, "/")) {
+                                    if _, err := publicFs.Open(httpReq.URL.Path + "/index.html"); err != nil {
+                                      wrapper.WriteHeader(nhttp.StatusNotFound);
+                                      return;
+                                    }
+                                  }
+                                  publicMux.ServeHTTP(wrapper, httpReq)
+                                }
 				// NotFoundAction.Dispatch(w, httpReq, nil, reqType)
 				return;
 			}
@@ -76,11 +94,6 @@ func ActionDispatchHandler(r *Router) nhttp.HandlerFunc {
 			log.Printf("FIELD %v:%v", key, t)
 			switch(t) {
 			case "int":
-				log.Printf("INTTTTTT")
-				log.Printf("INTTTTTT")
-				log.Printf("INTTTTTT")
-				log.Printf("INTTTTTT")
-				log.Printf(key)
 				p := httpReq.FormValue(key)
 				if pathParam, ok := pathParams[key]; ok {
 					p = pathParam
@@ -89,11 +102,9 @@ func ActionDispatchHandler(r *Router) nhttp.HandlerFunc {
 					params = append(params, reflect.ValueOf(int(i)))
 				}
 			case "string":
-				log.Printf("STRINGGGG")
 				p := httpReq.FormValue(key)
 				params = append(params, reflect.ValueOf(p))
 			case "&amp;{http Request}":
-				log.Printf("reqqqeuuestt")
 				params = append(params, reflect.ValueOf(*req))
 			}
 		}
@@ -167,4 +178,25 @@ func (rw staticFileResponseWriter) WriteHeader(code int) {
 	if code == nhttp.StatusNotFound {
 		fmt.Fprintln(rw, "404 bitches!")
 	}
+}
+
+type justFilesFilesystem struct {
+  fs nhttp.FileSystem
+}
+
+func (fs justFilesFilesystem) Open(name string) (nhttp.File, error) {
+  f, err := fs.fs.Open(name)
+  if err != nil {
+    return nil, err
+  }
+  return neuteredReaddirFile{f}, nil
+}
+
+type neuteredReaddirFile struct {
+  nhttp.File
+}
+
+func (f neuteredReaddirFile) Readdir(count int) ([]os.FileInfo, error) {
+fmt.Println("read dir??")
+  return nil, nil
 }

@@ -53,10 +53,6 @@ func (s *Server) Run() {
 	var port = flag.Int("port", int(p), "HTTP server port.")
 	flag.Parse()
 
-	// read the routes file
-
-	
-
 	// allow plugins to do some intialization
 	// for _, plugin := range plugins.All() {
 	// 	if plugin.OnStart != nil {
@@ -89,7 +85,7 @@ func (s *Server) Run() {
 
 	// parse mustache templates
 	// tmpl.SetPackageName(s.Package.Dir)
-    tmpl.ParseDir("app/views")
+        tmpl.ParseDir("app/views")
 
     // call into plugins again now that everything is ready
 	// for _, plugin := range plugins.All() {
@@ -99,12 +95,12 @@ func (s *Server) Run() {
 	// }
 
 	// listen and serve
-	log.Print("____________ ______ ")
+/*	log.Print("____________ ______ ")
 	log.Print("_  _ \\_  __ `/  __ \\")
 	log.Print("/  __/  /_/ // /_/ /")
 	log.Print("\\___/_\\__, / \\____/ ")
 	log.Print("     /____/         ")
-	log.Printf("ego server running on %v", *port)
+	log.Printf("ego server running on %v", *port)*/
 	if (*isDev) {
 		log.Printf(":: development mode ::")
 	}
